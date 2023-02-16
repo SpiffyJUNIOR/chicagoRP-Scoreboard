@@ -1,5 +1,6 @@
 local HideHUD = false
 local OpenMotherFrame = nil
+local OpenDropDown = nil
 local client = LocalPlayer()
 local Dynamic = 0
 
@@ -12,6 +13,21 @@ local reddebug = Color(200, 10, 10, 150)
 local blurMat = Material("pp/blurscreen")
 
 local enabled = GetConVar("cl_chicagoRP_NPCShop_enable")
+
+local playerOptions = {
+    {
+        title = "Steam Profile",
+        actionFunc = function(ply)
+            ply:ShowProfile()
+        end
+    },
+    {
+        title = "Copy SteamID",
+        actionFunc = function(ply)
+            SetClipboardText(ply:SteamID64())
+        end
+    }
+}
 
 local function BlurScreen(panel)
     if (!IsValid(panel) or !panel:IsVisible()) then return end
@@ -34,6 +50,22 @@ local function BlurScreen(panel)
     Dynamic = math.Clamp(Dynamic + (1 / FrameRate) * 7, 0, 1)
 end
 
+local function GetTextWidth(text, font)
+    surface.SetFont(font)
+
+    local width = select(1, surface.GetTextSize(text))
+
+    return width
+end
+
+local function GetTextHeight(text, font)
+    surface.SetFont(font)
+
+    local height = select(2, surface.GetTextSize(text))
+
+    return height
+end
+
 local function PingCheck(ping)
     if ping <= 50 then
         return pingcolor_green
@@ -53,6 +85,18 @@ hook.Add("HUDShouldDraw", "chicagoRP_NPCShop_HideHUD", function()
         return false
     end
 end)
+
+local function OpenDropDown_Close(dropdownpanel)
+    if !IsValid(dropdownpanel) then return end
+
+    dropdownpanel:SizeTo(0, 0, 1, 0, -1)
+
+    timer.Simple(1, function()
+        if IsValid(dropdownpanel) then
+            dropdownpanel:Close()
+        end
+    end)
+end
 
 local function OpenScoreboard()
     local ply = LocalPlayer()
@@ -107,11 +151,14 @@ local function OpenScoreboard()
             plyButton:Dock(LEFT)
             plyButton:SetSize(145, 36)
 
-            local parentW, parentH = plyButton:GetSize()
-
-            local plyname = ply:GetName()
+            local plyname = ply:getDarkRPVar("rpname") or ply:GetName()
+            local job = ply:getDarkRPVar("job")
             local ping = ply:Ping()
             local pingcolor = PingCheck(ping)
+            local teamcolor = team.GetColor(ply:Team())
+
+            local parentW, parentH = plyButton:GetSize()
+            local jobWidth = GetTextWidth(job, "Default")
 
             function plyButton:Paint(w, h)
                 ping = ply:Ping()
@@ -120,6 +167,9 @@ local function OpenScoreboard()
                 local pingstring = tostring(ping) .. "ms"
 
                 draw.DrawText(plyname, "Default", 34, 2, color_white, TEXT_ALIGN_LEFT)
+                draw.DrawText("[", "Default", 44, 2, color_white, TEXT_ALIGN_LEFT)
+                draw.DrawText(job, "Default", 45, 2, teamcolor, TEXT_ALIGN_LEFT)
+                draw.DrawText("]", "Default", 46 + jobWidth, 2, color_white, TEXT_ALIGN_LEFT)
                 draw.DrawText(pingstring, "Default", parentW - 34, 2, pingcolor, TEXT_ALIGN_RIGHT)
             end
 
@@ -127,6 +177,42 @@ local function OpenScoreboard()
             pfpImage:SetSize(32, 32)
             pfpImage:SetPos(4, 2)
             pfpImage:SetPlayer(ply, 32)
+
+            function plyButton:DoClick()
+                if IsValid(OpenDropDown) then
+                    OpenDropDown_Close(OpenDropDown)
+                end
+
+                local dropdownBox = vgui.Create("DPanel", parent)
+                local mouseX, mouseY = gui.MousePos()
+                dropdownBox:SetSize(0, 0)
+                dropdownBox:SetPos(mouseX, mouseY)
+                dropdownBox:NoClipping(true)
+
+                dropdownBox:SizeTo(100, (#playerOptions * 30) + 10, 1, 0, -1)
+
+                function dropdownBox:Paint(w, h)
+                    surface.SetDrawColor(70, 70, 70, 220)
+                    surface.DrawRect(0, 0, w, h)
+
+                    return false
+                end
+
+                for k, option in ipairs(playerOptions) do
+                    local optionButton = dropdownBox:Add("DButton")
+                    optionButton:SetPos(5, (k * 30) - 30 + 5)
+                    optionButton:SetSize(90, 30)
+                    optionButton:SetText(option.title)
+
+                    function optionButton:DoClick()
+                        option.actionFunc(ply)
+
+                        OpenDropDown_Close(dropdownBox)
+                    end
+                end
+
+                OpenDropDown = dropdownBox
+            end
         end
     end
 
@@ -171,5 +257,5 @@ end)
 print("chicagoRP Scoreboard GUI loaded!")
 
 -- to-do:
--- player options (open profile, mention, copy steamid, message player, report player)
+-- kill dropdown box on lost focus
 -- toggle mouse input
