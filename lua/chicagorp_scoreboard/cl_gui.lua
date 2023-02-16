@@ -14,21 +14,6 @@ local blurMat = Material("pp/blurscreen")
 
 local enabled = GetConVar("cl_chicagoRP_NPCShop_enable")
 
-local playerOptions = {
-    {
-        title = "Steam Profile",
-        actionFunc = function(ply)
-            ply:ShowProfile()
-        end
-    },
-    {
-        title = "Copy SteamID",
-        actionFunc = function(ply)
-            SetClipboardText(ply:SteamID64())
-        end
-    }
-}
-
 local function BlurScreen(panel)
     if (!IsValid(panel) or !panel:IsVisible()) then return end
     local layers, density, alpha = 1, 1, 100
@@ -86,7 +71,13 @@ hook.Add("HUDShouldDraw", "chicagoRP_NPCShop_HideHUD", function()
     end
 end)
 
-local function OpenDropDown_Close(dropdownpanel)
+local function InvalidatePanel(panel)
+    if IsValid(panel) then
+        panel:InvalidateLayout()
+    end
+end
+
+local function FancyClose(dropdownpanel)
     if !IsValid(dropdownpanel) then return end
 
     dropdownpanel:SizeTo(0, 0, 1, 0, -1)
@@ -141,8 +132,26 @@ local function OpenScoreboard()
         surface.DrawRect(0, 0, w, h)
     end
 
+    function motherFrame:OnMousePressed(mouseCode)
+        if !IsValid(OpenDropDown) then return end
+
+        local mouseX, mouseY = input.GetCursorPos()
+        local panelX, panelY = OpenDropDown:GetPos()
+        local panelW, panelH = OpenDropDown:GetSize()
+        local endX, endY = panelX + panelW, panelY + panelH
+
+        if endX < mouseX or mouseX > panelX or endY < mouseY or mouseY > panelY then
+            FancyClose(OpenDropDown)
+        end
+
+        -- if !OpenDropDown:IsHovered() then -- alt method
+        --     FancyClose(OpenDropDown)
+        -- end
+    end
+
     function motherFrame:PerformLayout(w, h)
         local players = player.GetAll()
+        local playerOptions = chicagoRP_Scoreboard.playerOptions
 
         for k, ply in ipairs(players) do
             if !IsValid(ply) then continue end
@@ -179,17 +188,17 @@ local function OpenScoreboard()
             pfpImage:SetPlayer(ply, 32)
 
             function plyButton:DoClick()
-                if IsValid(OpenDropDown) then
-                    OpenDropDown_Close(OpenDropDown)
-                end
+                FancyClose(OpenDropDown)
 
                 local dropdownBox = vgui.Create("DPanel", parent)
-                local mouseX, mouseY = gui.MousePos()
+                local mouseX, mouseY = input.GetCursorPos()
                 dropdownBox:SetSize(0, 0)
                 dropdownBox:SetPos(mouseX, mouseY)
                 dropdownBox:NoClipping(true)
 
-                dropdownBox:SizeTo(100, (#playerOptions * 30) + 10, 1, 0, -1)
+                local dropdownW, dropdownH = 100, (#playerOptions * 30) + 10
+
+                dropdownBox:SizeTo(dropdownW, dropdownH, 1, 0, -1)
 
                 function dropdownBox:Paint(w, h)
                     surface.SetDrawColor(70, 70, 70, 220)
@@ -207,7 +216,7 @@ local function OpenScoreboard()
                     function optionButton:DoClick()
                         option.actionFunc(ply)
 
-                        OpenDropDown_Close(dropdownBox)
+                        FancyClose(OpenDropDown)
                     end
                 end
 
@@ -243,19 +252,23 @@ gameevent.Listen("player_connect_client")
 gameevent.Listen("player_disconnect")
 
 hook.Add("player_connect_client", "chicagoRP_scoreboard_invalidateGUI", function(_)
-    if IsValid(OpenMotherFrame) then
-        OpenMotherFrame:InvalidateLayout()
-    end
+    InvalidatePanel(OpenMotherFrame)
 end)
 
 hook.Add("player_disconnect", "chicagoRP_scoreboard_invalidateGUI", function(_)
-    if IsValid(OpenMotherFrame) then
-        OpenMotherFrame:InvalidateLayout()
+    InvalidatePanel(OpenMotherFrame)
+end)
+
+hook.Add("PlayerButtonDown", "chicagoRP_vehicleradio_ButtonPressCheck", function(ply, button) -- SWAG MESSIAH............
+    if button == KEY_T and IsFirstTimePredicted() and IsValid(OpenMotherFrame) then
+        local inputenabled = OpenMotherFrame:IsMouseInputEnabled()
+
+        if inputenabled then
+            OpenMotherFrame:SetMouseInputEnabled(true)
+        else
+            OpenMotherFrame:SetMouseInputEnabled(false)
+        end
     end
 end)
 
 print("chicagoRP Scoreboard GUI loaded!")
-
--- to-do:
--- kill dropdown box on lost focus
--- toggle mouse input
