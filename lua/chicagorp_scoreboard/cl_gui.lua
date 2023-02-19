@@ -168,6 +168,7 @@ local function OpenScoreboard()
 
             local parentW, parentH = plyButton:GetSize()
             local jobWidth = GetTextWidth(job, "Default")
+            local jobstring = markup.Parse("<font=Default><colour=[[color_white]]>'['</colour><colour=[[teamcolor]]>[[job]]</colour><colour=[[color_white]]>']'</colour></font>")
 
             function plyButton:Paint(w, h)
                 ping = ply:Ping()
@@ -176,9 +177,7 @@ local function OpenScoreboard()
                 local pingstring = tostring(ping) .. "ms"
 
                 draw.DrawText(plyname, "Default", 34, 2, color_white, TEXT_ALIGN_LEFT)
-                draw.DrawText("[", "Default", 44, 2, color_white, TEXT_ALIGN_LEFT)
-                draw.DrawText(job, "Default", 45, 2, teamcolor, TEXT_ALIGN_LEFT)
-                draw.DrawText("]", "Default", 46 + jobWidth, 2, color_white, TEXT_ALIGN_LEFT)
+                jobstring:Draw(44, 2)
                 draw.DrawText(pingstring, "Default", parentW - 34, 2, pingcolor, TEXT_ALIGN_RIGHT)
             end
 
