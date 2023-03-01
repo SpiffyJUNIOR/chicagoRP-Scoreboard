@@ -15,10 +15,8 @@ chicagoRP_Scoreboard.playerOptions = {
     }
 }
 
-if CLIENT then
-	function chicagoRP_Scoreboard.AddPlayerOption(tbl)
-	    if !istable(tbl) or table.IsEmpty(tbl) then return end
+function chicagoRP_Scoreboard.AddPlayerOption(tbl)
+    if !istable(tbl) or table.IsEmpty(tbl) then return end
 
-	    table.Add(chicagoRP_Scoreboard.playerOptions, tbl)
-	end
+    table.Add(chicagoRP_Scoreboard.playerOptions, tbl)
 end

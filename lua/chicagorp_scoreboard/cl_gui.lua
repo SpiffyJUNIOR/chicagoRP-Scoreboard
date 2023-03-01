@@ -150,10 +150,15 @@ local function OpenScoreboard()
     end
 
     function motherFrame:PerformLayout(w, h)
+        if IsValid(OpenDropDown) and !IsValid(OpenDropDown.ply) then
+            FancyClose(OpenDropDown)
+        end
+
         local players = player.GetAll()
         local playerOptions = chicagoRP_Scoreboard.playerOptions
 
-        for k, ply in ipairs(players) do
+        for i = 1, #players do
+            local ply = players[i]
             if !IsValid(ply) then continue end
 
             local plyButton = motherFrame:Add("DButton")
@@ -186,6 +191,8 @@ local function OpenScoreboard()
             pfpImage:SetPos(4, 2)
             pfpImage:SetPlayer(ply, 32)
 
+            local optionCount = #playerOptions
+
             function plyButton:DoClick()
                 FancyClose(OpenDropDown)
 
@@ -195,7 +202,9 @@ local function OpenScoreboard()
                 dropdownBox:SetPos(mouseX, mouseY)
                 dropdownBox:NoClipping(true)
 
-                local dropdownW, dropdownH = 100, (#playerOptions * 30) + 10
+                dropdownBox.ply = ply
+
+                local dropdownW, dropdownH = 100, (optionCount * 30) + 10
 
                 dropdownBox:SizeTo(dropdownW, dropdownH, 1, 0, -1)
 
@@ -206,14 +215,17 @@ local function OpenScoreboard()
                     return false
                 end
 
-                for k, option in ipairs(playerOptions) do
+                for i = 1, optionCount do
+                    local option = playerOptions[i]
                     local optionButton = dropdownBox:Add("DButton")
-                    optionButton:SetPos(5, (k * 30) - 30 + 5)
+                    optionButton:SetPos(5, (i * 30) - 30 + 5)
                     optionButton:SetSize(90, 30)
                     optionButton:SetText(option.title)
 
                     function optionButton:DoClick()
-                        option.actionFunc(ply)
+                        if IsValid(dropdownBox.ply) then
+                            option.actionFunc(dropdownBox.ply)
+                        end
 
                         FancyClose(OpenDropDown)
                     end
