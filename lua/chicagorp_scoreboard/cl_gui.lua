@@ -1,4 +1,3 @@
-local HideHUD = false
 local OpenMotherFrame = nil
 local OpenDropDown = nil
 local client = LocalPlayer()
@@ -65,12 +64,6 @@ local function PingCheck(ping)
     end
 end
 
-hook.Add("HUDShouldDraw", "chicagoRP_NPCShop_HideHUD", function()
-    if HideHUD == true then
-        return false
-    end
-end)
-
 local function InvalidatePanel(panel)
     if IsValid(panel) then
         panel:InvalidateLayout()
@@ -112,7 +105,7 @@ local function OpenScoreboard()
     motherFrame:ShowCloseButton(false)
     motherFrame:ParentToHUD()
 
-    HideHUD = true
+    chicagoRP.HideHUD = true
     motherFrame.lblTitle = nil
 
     chicagoRP.PanelFadeIn(motherFrame, 0.15)
@@ -122,7 +115,7 @@ local function OpenScoreboard()
             chicagoRP.PanelFadeOut(motherFrame, 0.15)
         end
 
-        HideHUD = false
+        chicagoRP.HideHUD = false
     end
 
     function motherFrame:Paint(w, h)
